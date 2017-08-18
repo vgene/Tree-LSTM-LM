@@ -1,0 +1,12 @@
+*.pyc
+dist
+*.egg-info
+/build
+/env
+/.eggs
+data/java_1k_train
+data/java_1M_train
+data/java-1.txt
+data/test100.txt
+test_ast.pkl
+test2.java
