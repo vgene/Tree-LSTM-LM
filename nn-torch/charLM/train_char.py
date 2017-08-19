@@ -116,7 +116,6 @@ def main():
     try:
         for epoch in tqdm.tqdm(range(args.epoch)):
             start_time = time.time()
-            print("args:"+str(args.cuda))
             perplexity = run_epoch(model, reader, criterion, is_train=True, use_cuda=args.cuda)
             time_interval= time.time() - start_time
             print("Epoch:{}/{}, Perplexity:{}, Time:{}".format(epoch, args.epoch,

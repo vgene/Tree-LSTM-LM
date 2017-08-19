@@ -2,6 +2,7 @@ from __future__ import print_function
 import codecs
 import os
 import time
+import collections
 import torch
 import numpy as np
 
@@ -17,15 +18,17 @@ class Reader(object):
             raise EnvironmentError("File not exist")
 
         with codecs.open(filepath, "r", encoding="utf-8") as f:
-            self.raw_file = f.read()
+            raw_file = f.read()
 
-        # TODO: SO SLOW!
-        self.charaters = list(set(self.raw_file))
+        counter = collections.Counter(raw_file)
+        # sort all data
+        count_pairs = sorted(counter.items(), key=lambda x: -x[1])
+        # get character in appearing count sequence
+        self.charaters, _ = zip(*count_pairs)
         self.vocab_size = len(self.charaters)
-        self.file = []
-
-        for i in self.raw_file:
-            self.file.append(self.charaters.index(i))
+        self.vocab = dict(zip(self.charaters, range(len(self.charaters))))
+        self.vocab_size = len(self.charaters)
+        self.file = np.array(list(map(self.vocab.get, raw_file)))
 
         if DEBUG_MODE:
             print(self.charaters)
