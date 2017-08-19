@@ -21,8 +21,7 @@ def generate(model, prime_str='A', predict_len=100, temperature=0.8, cuda=False)
     prime_input = Variable(tensor.unsqueeze(0))
     #print(prime_input)
     if cuda:
-        for h in hidden:
-            h = h.cuda()
+        hidden = tuple(h.cuda() for h in hidden)
         prime_input = prime_input.cuda()
     predicted = prime_str
     model.seq_length = 1
