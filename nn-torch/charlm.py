@@ -2,7 +2,7 @@
 from torch.autograd import Variable
 import torch.nn as nn
 #import torch.nn.functional as F
-#import torch.optim as optim
+import torch.optim as optim
 
 class CharLM(nn.Module):
     """
@@ -18,16 +18,17 @@ class CharLM(nn.Module):
         self.embedding_dim = args.embedding_dim
         self.layer_num = args.layer_num
         self.dropout_prob = args.dropout_prob
-
+        self.lr = args.lr
         self.char_embedding = nn.Embedding(self.vocab_size, self.embedding_dim)
         self.dropout = nn.Dropout(self.dropout_prob)
         
         self.lstm = nn.LSTM(input_size = self.embedding_dim,
                             hidden_size = self.embedding_dim,
-                            num_layer = self.layer_num,
+                            num_layers= self.layer_num,
                             dropout = self.dropout_prob)
 
         self.fc = nn.Linear(self.embedding_dim, self.vocab_size)
+        self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
 
     def init_weights(self):
         """
