@@ -1,6 +1,7 @@
 # Created by https://www.gitignore.io/api/java,linux,macos,bazel,python
 
 data
+log
 
 ### Bazel ###
 /bazel-*

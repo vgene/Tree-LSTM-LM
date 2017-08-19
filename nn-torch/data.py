@@ -1,11 +1,10 @@
 from __future__ import print_function
-import unidecode
 import string
 import random
 import time
 import torch
-import math
 import os
+import unidecode
 import numpy as np
 
 DEBUG_MODE = True
@@ -34,7 +33,7 @@ class Reader():
         return len(self.file)
 
     def iterator_char(self, batch_size, seq_length):
-        data = np.zeros(self.file_length, dtype=np.int32)
+        data = np.array(self.file, dtype=np.int32)
         data_len = len(data)
 
         batch_len = data_len // batch_size
@@ -52,3 +51,17 @@ class Reader():
             inputs = final_data[:, i*seq_length:(i+1)*seq_length]
             targets = final_data[:, i*seq_length+1:(i+1)*seq_length+1]
             yield inputs, targets
+
+class Saver():
+
+    def __init__(self, logpath):
+        if not (os.path.exists(logpath) and os.path.isdir(logpath)):
+            raise EnvironmentError("Log Path Not Find")
+        self.logpath = logpath
+        
+    def save(self, model):
+        cur_time = time.strftime("%B%d-%H%M%S")
+        filepath = os.path.join(self.logpath, cur_time+".pth")
+        torch.save(model, filepath)
+
+        print("Save as file: {}".format(filepath))

@@ -9,7 +9,7 @@ class CharLM(nn.Module):
         A Character Level Language Model
         Feed in a batched sequences with vocabulary
     """
-    def __init__(self, args):
+    def __init__(self, args, mapping):
         super(CharLM, self).__init__()
 
         self.batch_size = args.batch_size
@@ -29,6 +29,7 @@ class CharLM(nn.Module):
 
         self.fc = nn.Linear(self.embedding_dim, self.vocab_size)
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        self.mapping = mapping
 
     def init_weights(self):
         """
@@ -39,10 +40,12 @@ class CharLM(nn.Module):
         self.fc.bias.data.zero_()
         self.fc.weight.data.uniform_(-init_range, init_range)
 
-    def init_hidden(self):
+    def init_hidden(self, batch_size=None):
         """
             Create an initial version of hidden state
         """
+        if batch_size:
+            self.batch_size = batch_size
         weight = next(self.parameters()).data
         return (Variable(weight.new(self.layer_num, self.batch_size, self.embedding_dim).zero_()),
                 Variable(weight.new(self.layer_num, self.batch_size, self.embedding_dim).zero_()))

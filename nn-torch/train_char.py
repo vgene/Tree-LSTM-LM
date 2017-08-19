@@ -1,7 +1,4 @@
 from __future__ import print_function
-import torch
-import torch.nn as nn
-from torch.autograd import Variable
 
 import argparse
 import tqdm
@@ -9,8 +6,11 @@ import os
 import time
 
 import numpy as np
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
 
-from data import Reader
+from data import Reader, Saver
 from charlm import CharLM
 
 def repackage_hidden(h):
@@ -67,14 +67,14 @@ def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01)
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--epoch", type=int, default=20)
-    parser.add_argument("--layer_num", type=int, default=2)
+    parser.add_argument("--epoch", type=int, default=100)
+    parser.add_argument("--layer_num", type=int, default=1)
     parser.add_argument("--lr", type=float, default=0.01)
     parser.add_argument("--seq_length", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=50)
-    parser.add_argument("--embedding_dim", type=int, default=256)
+    parser.add_argument("--embedding_dim", type=int, default=128)
     parser.add_argument("--dropout_prob", type=float, default=0)
-    parser.add_argument("--path", type=str, default='./test.txt')
+    parser.add_argument("--path", type=str, default='./data/test.txt')
     parser.add_argument("--log", type=str, default="./log/")
     parser.add_argument("--cuda", action="store_true")
 
@@ -105,18 +105,26 @@ def main():
     else:
         os.mkdir(args.log)
 
-    model = CharLM(args)
+    saver = Saver(args.log)
+
+    model = CharLM(args, reader.charaters)
     if args.cuda:
         model.cuda()
 
     criterion = nn.CrossEntropyLoss()
 
-    for epoch in tqdm.tqdm(range(args.epoch)):
-        start_time = time.time()
-        perplexity = run_epoch(model, reader, criterion, is_train=True, use_cuda=args.cuda)
-        time_interval= time.time() - start_time
-        print("Epoch:{}/{}, Perplexity:{}, Time:{}".format(epoch, args.epoch,
-                                          perplexity, time_interval))
+    try:
+        for epoch in tqdm.tqdm(range(args.epoch)):
+            start_time = time.time()
+            perplexity = run_epoch(model, reader, criterion, is_train=True, use_cuda=args.cuda)
+            time_interval= time.time() - start_time
+            print("Epoch:{}/{}, Perplexity:{}, Time:{}".format(epoch, args.epoch,
+                                            perplexity, time_interval))
+
+        saver.save(model)
+    except KeyboardInterrupt:
+        print("Stop and Save...")
+        saver.save(model)
 
 if __name__ == "__main__":
     main()
