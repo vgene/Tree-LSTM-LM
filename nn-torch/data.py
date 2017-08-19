@@ -4,7 +4,7 @@ import random
 import time
 import torch
 import os
-import unidecode
+import codecs
 import numpy as np
 
 DEBUG_MODE = True
@@ -16,7 +16,9 @@ class Reader():
         if not os.path.exists(filepath):
             raise EnvironmentError("File not exist")
 
-        self.raw_file = unidecode.unidecode(open(filepath).read())
+        with codecs.open(filepath, "r", encoding="utf-8") as f:
+            self.raw_file = f.read()
+        #self.raw_file = unidecode.unidecode(open(filepath).read())
         self.charaters = list(set(self.raw_file))
         self.vocab_size = len(self.charaters)
         self.file = []
