@@ -7,7 +7,7 @@ import os
 import codecs
 import numpy as np
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 class Reader():
 

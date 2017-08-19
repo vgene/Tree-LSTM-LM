@@ -17,18 +17,17 @@ def repackage_hidden(h, use_cuda=False):
     """Wraps hidden states in new Variables, to detach them from their history."""
     if type(h) == Variable:
         if use_cuda:
-            return Variable(h.data).cuda()
+            return Variable(h.data.cuda())
         else:
             return Variable(h.data)
     else:
-        return tuple(repackage_hidden(v) for v in h)
+        return tuple(repackage_hidden(v, use_cuda) for v in h)
 
 def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01):
     """
         reader: data provider
         criterion: loss calculation 
     """
-
     if is_train:
         model.train()
     else:
@@ -37,8 +36,6 @@ def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01)
     epoch_size = ((reader.file_length // model.batch_size)-1) // model.seq_length
 
     hidden = model.init_hidden()
-    if use_cuda:
-        hidden.cuda()
 
     iters = 0
     costs = 0
@@ -48,18 +45,17 @@ def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01)
         inputs = Variable(torch.from_numpy(inputs.astype(np.int64)).transpose(0,1).contiguous())
         targets = Variable(torch.from_numpy(targets.astype(np.int64)).transpose(0,1).contiguous())
         if use_cuda:
-            inputs.cuda()
-            targets.cuda()
+            inputs = inputs.cuda()
+            targets = targets.cuda()
         targets = torch.squeeze(targets.view(-1, model.batch_size*model.seq_length))
-        hidden = repackage_hidden(hidden, use_cuda)
-
+        hidden = repackage_hidden(hidden, use_cuda=use_cuda)
         outputs, hidden = model(inputs, hidden)
 
         loss = criterion(outputs.view(-1, model.vocab_size), targets)
         costs += loss.data[0] * model.seq_length
 
         perplexity = np.exp(costs/((steps+1)*model.seq_length))
-        print("Iter {}/{},Perplexity:{}".format(steps+1, epoch_size, perplexity))
+        #print("Iter {}/{},Perplexity:{}".format(steps+1, epoch_size, perplexity))
 
         if is_train:
             loss.backward()
@@ -120,6 +116,7 @@ def main():
     try:
         for epoch in tqdm.tqdm(range(args.epoch)):
             start_time = time.time()
+            print("args:"+str(args.cuda))
             perplexity = run_epoch(model, reader, criterion, is_train=True, use_cuda=args.cuda)
             time_interval= time.time() - start_time
             print("Epoch:{}/{}, Perplexity:{}, Time:{}".format(epoch, args.epoch,
