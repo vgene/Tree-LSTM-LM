@@ -1,16 +1,16 @@
 from __future__ import print_function
-import string
-import random
+import codecs
+import os
 import time
 import torch
-import os
-import codecs
 import numpy as np
 
 DEBUG_MODE = False
 
-class Reader():
-
+class Reader(object):
+    """
+        Provider an input interface, iterator will yield characters sequences or word sequences
+    """
     def __init__(self, filepath):
         """ Read file and set self.file """
         if not os.path.exists(filepath):
@@ -18,11 +18,12 @@ class Reader():
 
         with codecs.open(filepath, "r", encoding="utf-8") as f:
             self.raw_file = f.read()
-        #self.raw_file = unidecode.unidecode(open(filepath).read())
+
+        # TODO: SO SLOW!
         self.charaters = list(set(self.raw_file))
         self.vocab_size = len(self.charaters)
         self.file = []
-    
+
         for i in self.raw_file:
             self.file.append(self.charaters.index(i))
 
@@ -40,13 +41,13 @@ class Reader():
 
         batch_len = data_len // batch_size
 
-        final_data = np.zeros([batch_size, batch_len], dtype = np.int32)
+        final_data = np.zeros([batch_size, batch_len], dtype=np.int32)
         for i in range(batch_size):
             final_data[i] = data[batch_len *i:batch_len*(i+1)]
 
         epoch_size = (batch_len-1) // seq_length
 
-        if (epoch_size == 0):
+        if epoch_size == 0:
             raise ValueError("Epoch size equals zero")
 
         for i in range(epoch_size):
@@ -54,13 +55,15 @@ class Reader():
             targets = final_data[:, i*seq_length+1:(i+1)*seq_length+1]
             yield inputs, targets
 
-class Saver():
-
+class Saver(object):
+    """
+        Provide an output interface
+    """
     def __init__(self, logpath):
         if not (os.path.exists(logpath) and os.path.isdir(logpath)):
             raise EnvironmentError("Log Path Not Find")
         self.logpath = logpath
-        
+
     def save(self, model):
         cur_time = time.strftime("%B%d-%H%M%S")
         filepath = os.path.join(self.logpath, cur_time+".pth")
