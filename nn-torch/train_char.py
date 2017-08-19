@@ -13,10 +13,13 @@ from torch.autograd import Variable
 from data import Reader, Saver
 from charlm import CharLM
 
-def repackage_hidden(h):
+def repackage_hidden(h, use_cuda=False):
     """Wraps hidden states in new Variables, to detach them from their history."""
     if type(h) == Variable:
-        return Variable(h.data)
+        if use_cuda:
+            return Variable(h.data).cuda()
+        else:
+            return Variable(h.data)
     else:
         return tuple(repackage_hidden(v) for v in h)
 
@@ -48,7 +51,8 @@ def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01)
             inputs.cuda()
             targets.cuda()
         targets = torch.squeeze(targets.view(-1, model.batch_size*model.seq_length))
-        hidden = repackage_hidden(hidden)
+        hidden = repackage_hidden(hidden, use_cuda)
+
         outputs, hidden = model(inputs, hidden)
 
         loss = criterion(outputs.view(-1, model.vocab_size), targets)
