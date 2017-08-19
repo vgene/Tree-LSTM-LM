@@ -54,12 +54,9 @@ class CharLM(nn.Module):
         """
             Do one forward one, returning logits and hidden states
         """
-        #print(inputs)
         embeds = self.dropout(self.char_embedding(inputs))
         if (len(embeds.data.size()) == 2):
-            embeds.data.unsqueeze_(0)
-        #print(embeds)
-        #print(hidden)
+            embeds.data.unsqueeze_(0) #TODO: Strange incompatiblility between CPU and GPU
         outputs, hidden = self.lstm(embeds, hidden)
         logits = self.fc(outputs.view(-1, self.embedding_dim))
         logits = logits.view(self.seq_length, self.batch_size, self.vocab_size)

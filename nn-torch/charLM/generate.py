@@ -23,7 +23,6 @@ def generate(model, prime_str='A', predict_len=100, temperature=0.8, cuda=False)
     if cuda:
         hidden = tuple(h.cuda() for h in hidden)
         prime_input = prime_input.cuda()
-        model.cuda()
     predicted = prime_str
     model.seq_length = 1
 
