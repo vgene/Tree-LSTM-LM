@@ -37,9 +37,7 @@ def generate(model, prime_str='A', predict_len=100, temperature=0.8, cuda=False)
         
         # Sample from the network as a multinomial distribution
         output_dist = output.data.view(-1).div(temperature).exp()
-        #print(output_dist)
         top_i = torch.multinomial(output_dist, 1)[0]
-        #print(top_i)
 
         # Add predicted character to string and use as next input
         predicted_char = model.mapping[top_i]
