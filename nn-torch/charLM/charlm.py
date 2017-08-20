@@ -26,7 +26,6 @@ class CharLM(nn.Module):
                             hidden_size = self.embedding_dim,
                             num_layers= self.layer_num,
                             dropout = self.dropout_prob)
-
         self.fc = nn.Linear(self.embedding_dim, self.vocab_size)
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
         self.mapping = mapping
@@ -57,6 +56,7 @@ class CharLM(nn.Module):
         embeds = self.dropout(self.char_embedding(inputs))
         if (len(embeds.data.size()) == 2):
             embeds.data.unsqueeze_(0) #TODO: Strange incompatiblility between CPU and GPU
+        self.lstm.flatten_parameters()
         outputs, hidden = self.lstm(embeds, hidden)
         logits = self.fc(outputs.view(-1, self.embedding_dim))
         logits = logits.view(self.seq_length, self.batch_size, self.vocab_size)

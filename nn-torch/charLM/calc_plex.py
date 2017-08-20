@@ -7,6 +7,10 @@ from tqdm import tqdm
 import argparse
 import math
 
+
+class BatchProvider(object):
+    def __init__(self):
+        pass
 def char_tensor(string, all_characters):
     tensor = torch.zeros(len(string)).long()
     for c in range(len(string)):
@@ -22,14 +26,14 @@ def calc_perplexity(model, test_str, cuda=False):
     hidden = model.init_hidden(1)
 
     tensor = char_tensor(test_str, model.mapping)
-    prime_input = Variable(tensor.unsqueeze(0))
+    prime_input = Variable(tensor.unsqueeze(0), volatile=True)
 
     if cuda:
         hidden = tuple(h.cuda() for h in hidden)
         prime_input = prime_input.cuda()
 
     for p in tqdm(range(len(test_str)-1)):
-        output, hidden = model(prime_input[:,p], hidden)
+        #output, hidden = model(prime_input[:,p], hidden)
         if (p == 0):
             log_per = 0
         else:
@@ -38,6 +42,8 @@ def calc_perplexity(model, test_str, cuda=False):
             output = softmax(output[0])
 
             log_per += math.log(output.data[model.mapping.index(test_str[p+1])])
+        if (p == 20000):
+            break
     log_per /= len(test_str)
     print(log_per)
     perplexity = 1/math.exp(log_per)
@@ -45,7 +51,9 @@ def calc_perplexity(model, test_str, cuda=False):
 
 
 def main():
-
+    import sys
+    reload(sys)
+    sys.setdefaultencoding("utf-8")
     argparser = argparse.ArgumentParser()
     argparser.add_argument('--model', type=str)
     argparser.add_argument('--test_file', type=str)

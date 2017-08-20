@@ -55,7 +55,7 @@ def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01)
         costs += loss.data[0] * model.seq_length
 
         perplexity = np.exp(costs/((steps+1)*model.seq_length))
-        print("Iter {}/{},Perplexity:{}".format(steps+1, epoch_size, perplexity))
+        #print("Iter {}/{},Perplexity:{}".format(steps+1, epoch_size, perplexity))
 
         if is_train:
             loss.backward()
@@ -68,10 +68,10 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--epoch", type=int, default=100)
-    parser.add_argument("--layer_num", type=int, default=2)
-    parser.add_argument("--lr", type=float, default=0.0002)
+    parser.add_argument("--layer_num", type=int, default=3)
+    parser.add_argument("--lr", type=float, default=0.002)
     parser.add_argument("--seq_length", type=int, default=50)
-    parser.add_argument("--batch_size", type=int, default=50)
+    parser.add_argument("--batch_size", type=int, default=200)
     parser.add_argument("--embedding_dim", type=int, default=256)
     parser.add_argument("--dropout_prob", type=float, default=0)
     parser.add_argument("--path", type=str, default='./data/test.txt')
