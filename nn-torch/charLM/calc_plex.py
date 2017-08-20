@@ -8,47 +8,58 @@ import argparse
 import math
 
 
-class BatchProvider(object):
-    def __init__(self):
-        pass
-def char_tensor(string, all_characters):
-    tensor = torch.zeros(len(string)).long()
-    for c in range(len(string)):
-        try:
-            tensor[c] = all_characters.index(string[c])
-        except:
-            continue
-    return tensor
+class Tester(object):
+    """
+        Parse Test File and calculate metrics like perplexity etc,.
+    """
+    def __init__(self, filename, batch_size, mapping):
 
-def calc_perplexity(model, test_str, cuda=False):
+        self.filename = filename 
+        self.batch_size = batch_size
+        self.mapping = dict(zip(mapping, range(len(mapping))))
 
-    model.seq_length = 1
-    hidden = model.init_hidden(1)
+        with codecs.open(self.filename, 'r', encoding="utf-8") as f:
+            self.test_files = f.readlines()
+        self.max_length = len(max(self.test_files, key=len))
+        self.length = list(map(len, self.test_files))
 
-    tensor = char_tensor(test_str, model.mapping)
-    prime_input = Variable(tensor.unsqueeze(0), volatile=True)
+        tensor = torch.zeros([self.batch_size, self.max_length]).long()
+        # assert(len(self.test_files) == self.batch_size) #TODO:Really batch it with batch_size
 
-    if cuda:
-        hidden = tuple(h.cuda() for h in hidden)
-        prime_input = prime_input.cuda()
+        for idx, file_str in enumerate(self.test_files):
+            if idx == self.batch_size:
+                break
+            tensor[idx][:len(file_str)] = torch.LongTensor(list(map(self.mapping.get, file_str)))
 
-    for p in tqdm(range(len(test_str)-1)):
-        #output, hidden = model(prime_input[:,p], hidden)
-        if (p == 0):
-            log_per = 0
-        else:
+        self.tensor = tensor
+
+    def calc_perplexity(self, model, cuda=False):
+
+        model.seq_length = 1
+        hidden = model.init_hidden(self.batch_size)
+
+        prime_input = Variable(self.tensor, volatile=True)
+
+        if cuda:
+            hidden = tuple(h.cuda() for h in hidden) # For LSTM especially
+            prime_input = prime_input.cuda()
+
+        log_per = 0
+        for p in tqdm(range(self.max_length-1)):
+            output, hidden = model(prime_input[:, p], hidden)
+
             # print(output)
             output = output.view(-1, model.vocab_size)
-            output = softmax(output[0])
+            for i in range(self.batch_size):
+                if p >= self.length[i]-1:
+                    continue
+                probs = softmax(output[i])
+                log_per += math.log(probs.data[model.mapping.index(self.test_files[i][p+1])])
 
-            log_per += math.log(output.data[model.mapping.index(test_str[p+1])])
-        if (p == 20000):
-            break
-    log_per /= len(test_str)
-    print(log_per)
-    perplexity = 1/math.exp(log_per)
-    return perplexity
-
+        log_per /= sum(self.length[0:self.batch_size])
+        print(log_per)
+        perplexity = 1/math.exp(log_per)
+        return perplexity
 
 def main():
     import sys
@@ -62,10 +73,10 @@ def main():
 
     model = torch.load(args.model)
     print(model.vocab_size)
-    with codecs.open(args.test_file, 'r', encoding="utf-8") as f:
-        test_str = f.read()
-
-    perplexity = calc_perplexity(model, test_str, cuda=args.cuda)
+    batch_size = 7
+    print(model.mapping)
+    tester = Tester(args.test_file, batch_size, model.mapping)
+    perplexity = tester.calc_perplexity(model, cuda=args.cuda)
     print("Test File: {}, Perplexity:{}".format(args.test_file, perplexity))
 
 if __name__ == "__main__":
