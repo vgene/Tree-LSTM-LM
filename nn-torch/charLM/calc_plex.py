@@ -58,11 +58,11 @@ class Tester(object):
 
             # print(output)
             output = output.view(-1, model.vocab_size)
+            probs = softmax(output)
             for i in range(self.batch_size):
                 if p >= self.length[i]-1:
                     continue
-                #probs = softmax(output[i])
-                #log_per += math.log(probs.data[model.mapping.index(self.test_files[i][p+1])])
+                log_per += math.log(probs[i].data[model.mapping.index(self.test_files[i][p+1])])
 
         log_per /= sum(self.length[0:self.batch_size])
         print(log_per)
