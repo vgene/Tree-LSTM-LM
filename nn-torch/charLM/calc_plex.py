@@ -1,11 +1,14 @@
+"""
+    Calc Perplexity in batch 
+"""
 import os
 import codecs
+import argparse
+import math
 import torch
 from torch.autograd import Variable
 from torch.nn.functional import log_softmax
 from tqdm import tqdm
-import argparse
-import math
 
 
 class Tester(object):
