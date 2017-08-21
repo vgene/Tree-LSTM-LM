@@ -7,7 +7,7 @@ import argparse
 import math
 import torch
 from torch.autograd import Variable
-from torch.nn.functional import softmax
+from torch.nn.functional import log_softmax
 from tqdm import tqdm
 
 
@@ -39,7 +39,8 @@ class Tester(object):
             try:
                 tensor[idx][:len(file_str)] = torch.LongTensor(list(map(self.mapping.get, file_str)))
             except Exception as e:
-                print(file_str)
+                #print(file_str)
+                self.length[idx] = 0
                 continue
 
         self.tensor = tensor
@@ -61,11 +62,11 @@ class Tester(object):
 
             # print(output)
             output = output.view(-1, model.vocab_size)
-            probs = softmax(output)
+            probs = log_softmax(output)
             for i in range(self.batch_size):
                 if p >= self.length[i]-1:
                     continue
-                log_per += math.log(probs[i].data[model.mapping.index(self.test_files[i][p+1])])
+                log_per += (probs[i].data[self.mapping.get(self.test_files[i][p+1])])
 
         log_per /= sum(self.length[0:self.batch_size])
         print(log_per)
@@ -84,7 +85,7 @@ def main():
 
     model = torch.load(args.model)
     print(model.vocab_size)
-    batch_size = 500
+    batch_size = 1000
     tester = Tester(args.test_file, batch_size, model.mapping)
     perplexity = tester.calc_perplexity(model, cuda=args.cuda)
     print("Test File: {}, Perplexity:{}".format(args.test_file, perplexity))
