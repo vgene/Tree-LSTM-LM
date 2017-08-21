@@ -23,6 +23,10 @@ class Tester(object):
 
         with codecs.open(self.filename, 'r', encoding="utf-8") as f:
             self.test_files = f.readlines()
+
+        assert(self.batch_size <= len(self.test_files))
+        # TODO: NO!
+        self.test_files = self.test_files[0:self.batch_size]
         self.max_length = len(max(self.test_files, key=len))
         self.length = list(map(len, self.test_files))
 
@@ -32,7 +36,11 @@ class Tester(object):
         for idx, file_str in enumerate(self.test_files):
             if idx == self.batch_size:
                 break
-            tensor[idx][:len(file_str)] = torch.LongTensor(list(map(self.mapping.get, file_str)))
+            try:
+                tensor[idx][:len(file_str)] = torch.LongTensor(list(map(self.mapping.get, file_str)))
+            except Exception as e:
+                print(file_str)
+                continue
 
         self.tensor = tensor
 
@@ -76,8 +84,7 @@ def main():
 
     model = torch.load(args.model)
     print(model.vocab_size)
-    batch_size = 7
-    print(model.mapping)
+    batch_size = 500
     tester = Tester(args.test_file, batch_size, model.mapping)
     perplexity = tester.calc_perplexity(model, cuda=args.cuda)
     print("Test File: {}, Perplexity:{}".format(args.test_file, perplexity))
