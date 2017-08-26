@@ -78,6 +78,10 @@ class AttrMapping(Enum):
     throws = 65
     block = 66
 
+    @staticmethod
+    def size(self):
+        return 68
+
 @unique
 class NodeMapping(Enum):
     UNK = 0
@@ -162,6 +166,10 @@ class NodeMapping(Enum):
     EnumConstantDeclaration = 85
     AnnotationMethod = 86
 
+    @staticmethod
+    def size(self):
+        return 87
+
 class JavaASTProvider(object):
     """
         at first, set batch size = 1
@@ -194,10 +202,9 @@ class JavaASTProvider(object):
                 ast = javalang.parse.parse(java_file)
                 # print(ast)
                 for node in self.iterate_ast(ast):
-                    self.print_node(node)
+                    yield node
             except:
                 print(traceback.format_exc())
-
                 continue
         
     def iterate_ast(self, node, attr="NONE"):
@@ -223,8 +230,24 @@ class JavaASTProvider(object):
             yield {"attr":attr, "node": self.STRING}
         
     def print_node(self, node):
-        print(AttrMapping[node["attr"]].value, NodeMapping[str(node["node"])]) 
+        print(AttrMapping[node["attr"]].value, NodeMapping[str(node["node"])].value) 
         # pass
+
+class Saver(object):
+    """
+        Provide an output interface
+    """
+    def __init__(self, logpath):
+        if not (os.path.exists(logpath) and os.path.isdir(logpath)):
+            raise EnvironmentError("Log Path Not Find")
+        self.logpath = logpath
+
+    def save(self, model):
+        cur_time = time.strftime("%B%d-%H%M%S")
+        filepath = os.path.join(self.logpath, cur_time+".pth")
+        torch.save(model, filepath)
+
+        print("Save as file: {}".format(filepath))
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
