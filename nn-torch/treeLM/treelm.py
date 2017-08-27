@@ -29,7 +29,7 @@ class TreeLM(nn.Module):
 
         self.fc = nn.Linear(self.embedding_dim, self.node_size)
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
-        self.node_mapping = node_mapping
+        # self.node_mapping = node_mapping
 
     def init_weights(self):
         """
@@ -54,6 +54,7 @@ class TreeLM(nn.Module):
         """
             Do one forward one, returning logits and hidden states
         """
+        # print(inputs)
         embeds = self.dropout(self.attr_embedding(inputs))
         if (len(embeds.data.size()) == 2):
             embeds.data.unsqueeze_(0) #TODO: Strange incompatiblility between CPU and GPU

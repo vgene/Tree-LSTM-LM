@@ -23,24 +23,25 @@ def repackage_hidden(h, use_cuda=False):
     else:
         return tuple(repackage_hidden(v, use_cuda) for v in h)
 
-def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01):
+def run_epoch(model, provider, criterion, is_train=False, use_cuda=False, lr=0.01):
     """
         reader: data provider
         criterion: loss calculation 
     """
-    if is_train:
-        model.train()
-    else:
-        model.eval()
+    # if is_train:
+    #     model.train()
+    # else:
+    #     model.eval()
 
-    epoch_size = ((reader.file_length // model.batch_size)-1) // model.seq_length
+    # epoch_size = ((provider.file_length // model.batch_size)-1) // model.seq_length
 
     hidden = model.init_hidden()
 
     iters = 0
     costs = 0
-    for steps, (inputs, targets) in enumerate(reader.iterator_char(model.batch_size, model.seq_length)):
-         
+    for steps, (inputs, targets) in enumerate(provider.iterator(model.batch_size, model.seq_length)):
+
+        # print(inputs)
         model.optimizer.zero_grad()
         inputs = Variable(torch.from_numpy(inputs.astype(np.int64)).transpose(0,1).contiguous())
         targets = Variable(torch.from_numpy(targets.astype(np.int64)).transpose(0,1).contiguous())
@@ -51,7 +52,7 @@ def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01)
         hidden = repackage_hidden(hidden, use_cuda=use_cuda)
         outputs, hidden = model(inputs, hidden)
 
-        loss = criterion(outputs.view(-1, model.vocab_size), targets)
+        loss = criterion(outputs.view(-1, model.node_size), targets)
         costs += loss.data[0] * model.seq_length
 
         perplexity = np.exp(costs/((steps+1)*model.seq_length))
@@ -71,7 +72,7 @@ def main():
     parser.add_argument("--layer_num", type=int, default=3)
     parser.add_argument("--lr", type=float, default=0.002)
     parser.add_argument("--seq_length", type=int, default=50)
-    parser.add_argument("--batch_size", type=int, default=200)
+    parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--embedding_dim", type=int, default=256)
     parser.add_argument("--dropout_prob", type=float, default=0)
     parser.add_argument("--path", type=str, default='./data/test.txt')
@@ -108,7 +109,7 @@ def main():
 
     saver = Saver(args.log)
 
-    model = TreeLM(args, attr_size, node_mapping)
+    model = TreeLM(args, attr_size, node_size)
     if args.cuda:
         model.cuda()
 

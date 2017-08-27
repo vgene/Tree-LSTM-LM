@@ -6,10 +6,11 @@ import argparse
 import codecs
 import javalang
 import torch
+import numpy as np
 
 @unique
 class AttrMapping(Enum):
-    NONE = -1
+    NONE = 67
     pattern_type = 0
     statements = 1
     expressionl = 2
@@ -79,7 +80,7 @@ class AttrMapping(Enum):
     block = 66
 
     @staticmethod
-    def size(self):
+    def size():
         return 68
 
 @unique
@@ -167,7 +168,7 @@ class NodeMapping(Enum):
     AnnotationMethod = 86
 
     @staticmethod
-    def size(self):
+    def size():
         return 87
 
 class JavaASTProvider(object):
@@ -196,13 +197,22 @@ class JavaASTProvider(object):
         with codecs.open(filename, 'r', encoding='utf-8') as f:
             self.java_files = [f.read()]
 
-    def iterate(self):
+    def iterator(self, batch_size, seq_length):
+        seq_attr = []
+        seq_node = []
         for java_file in self.java_files:
             try:
                 ast = javalang.parse.parse(java_file)
                 # print(ast)
                 for node in self.iterate_ast(ast):
-                    yield node
+                    if len(seq_attr) < seq_length:
+                        seq_attr.append(AttrMapping[node['attr']].value)
+                        seq_node.append(NodeMapping[str(node['node'])].value)
+                        # seq.append(node)
+                    else:
+                        yield (np.array([seq_attr]), np.array([seq_node]))
+                        seq_attr = [] 
+                        seq_node = []
             except:
                 print(traceback.format_exc())
                 continue
@@ -227,6 +237,7 @@ class JavaASTProvider(object):
             # yield self.SUBT_END
 
         if isinstance(node, str) or (isinstance(node, unicode)):
+            # yield (AttrMapping[attr].value, NodeMapping[node].value)
             yield {"attr":attr, "node": self.STRING}
         
     def print_node(self, node):
@@ -257,4 +268,6 @@ if __name__ == "__main__":
 
     provider = JavaASTProvider(args.filename)
 
-    provider.iterate()
+    # print(NodeMapping['CompilationUnit'].value)
+    for i in provider.iterator(1, 2):
+        print(i)
