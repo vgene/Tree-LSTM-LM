@@ -40,7 +40,7 @@ def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01)
     iters = 0
     costs = 0
     for steps, (inputs, targets) in enumerate(reader.iterator_char(model.batch_size, model.seq_length)):
-        print(len(inputs)) 
+        #print(len(inputs)) 
         model.optimizer.zero_grad()
         inputs = Variable(torch.from_numpy(inputs.astype(np.int64)).transpose(0,1).contiguous())
         targets = Variable(torch.from_numpy(targets.astype(np.int64)).transpose(0,1).contiguous())
