@@ -1,5 +1,6 @@
 # Created by https://www.gitignore.io/api/java,linux,macos,bazel,python
 
+*.pt
 data
 log
 
