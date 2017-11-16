@@ -12,6 +12,7 @@ from torch.autograd import Variable
 
 from data import Reader, Saver
 from charlm import CharLM
+from calc_plex import Tester
 
 def repackage_hidden(h, use_cuda=False):
     """Wraps hidden states in new Variables, to detach them from their history."""
@@ -39,7 +40,7 @@ def run_epoch(model, reader, criterion, is_train=False, use_cuda=False, lr=0.01)
 
     iters = 0
     costs = 0
-    for steps, (inputs, targets) in enumerate(reader.iterator_char(model.batch_size, model.seq_length)):
+    for steps, (inputs, targets) in tqdm.tqdm(enumerate(reader.iterator_char(model.batch_size, model.seq_length))):
         #print(len(inputs)) 
         model.optimizer.zero_grad()
         inputs = Variable(torch.from_numpy(inputs.astype(np.int64)).transpose(0,1).contiguous())
@@ -74,7 +75,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=200)
     parser.add_argument("--embedding_dim", type=int, default=256)
     parser.add_argument("--dropout_prob", type=float, default=0)
-    parser.add_argument("--path", type=str, default='./data/test.txt')
+    parser.add_argument("--path", type=str, default='./data/')
     parser.add_argument("--log", type=str, default="./log/")
     parser.add_argument("--cuda", action="store_true")
 
@@ -92,10 +93,11 @@ def main():
         args.cuda = False
 
     # Check path and log
-    if not (os.path.exists(args.path) and os.path.isfile(args.path)):
+    if not (os.path.exists(args.path) and os.path.isdir(args.path)):
         raise EnvironmentError("Data path not found")
 
-    reader = Reader(args.path)
+    # Train File
+    reader = Reader(os.path.join(args.path,'train.txt'))
     args.vocab_size = reader.vocab_size
 
     # Create log path is not exist
@@ -110,17 +112,21 @@ def main():
     model = CharLM(args, reader.charaters)
     if args.cuda:
         model.cuda()
-
+    
     criterion = nn.CrossEntropyLoss()
 
+    batch_size = 1000
+    tester = Tester(os.path.join(args.path,"val.txt"), 1000, model.mapping)
     try:
         for epoch in tqdm.tqdm(range(args.epoch)):
+            val_ppl = tester.calc_perplexity(model, cuda=args.cuda)
+            print("Validation Perplexity:{}".format(val_ppl))
             start_time = time.time()
             perplexity = run_epoch(model, reader, criterion, is_train=True, use_cuda=args.cuda)
             time_interval= time.time() - start_time
             print("Epoch:{}/{}, Perplexity:{}, Time:{}".format(epoch, args.epoch,
                                             perplexity, time_interval))
-
+            
         saver.save(model)
     except KeyboardInterrupt:
         print("Stop and Save...")
